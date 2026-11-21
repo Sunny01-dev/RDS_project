@@ -1,0 +1,122 @@
+1st:
+Go to AWS-RDS service, go to Databases, then Create Database:
+->select Maria_DB
+->Choose a database creation method -->go for the full configuration.
+->choose template -->Sandbox
+->go down to settings-> toggle on the show only versions that support the Amazon RDS Optimized Writes.
+->inside the Engine version: select DB-version as per the project requirement. suppose for my current project '11.8.6'
+-> provide the name on DB instance identifier-
+-> while creating an Db it is must to provide the password to it so its all on our-side to self manage or to use the AWS Secret Manager service which is the paid one service. it completely manage our Secrets, passwords or credentials.
+-> down below, provide the password to the DB and also remember it is must to save the password! we are only able to get this password to see only one-time...
+-> after the password is provided, simply select the "Password authentication" 
+-> Inside the instance configuration->> go through it !!
+-> next, there is the storage type --> select the require amount of the storage!
+-> then Connectivity: select >> Don't connect to an EC2 compute resource.
+  -> select the network type: IPv4
+  -> choose the VPC: Default (if we are using the different vpc for the DB use that only)
+  -> provide the public access too "NO"
+  -> select Create New or simply go with the Create new!!
+  -> provide the name to VPC security group name 
+  -> select the Availability zone! 
+-> now just simply go to the Create Database!
+----------------------------------------------------------------------
+NOTE: remember the password --->XXXXXXXXXX & Master Username --->admin
+----------------------------------------------------------------------
+------WAIT FOR THE COUPLE OF MINUTES TO CREATE OUR DATABASE------
+2nd:
+create an EC2 instance for the rest of the project !! inside this we are creating the DB manager to communicate with the backend via API which is running on 8080 port. with this backend service and then frontend part 
+
+Ports to expose for the project are :
+80(HTTP)
+22(SSH)
+8080(DB-BAckend API)
+3306(Maria DB )
+447(if we are hosting the website with the TLS certificate!)
+
+after the instance gets created :
+follow these steps-->
+-sudo -i
+-apt get update (patching my ec2 machine) 
+-apt install mysql-client -y (installing the DB manager)
+-apt install maven -y
+-apt install openjdk-21-jdk -y(for using the java on my backend for that i need java package manager!)
+
+# Now, simply goto DB service where the Db is created copy the Endpoint provided by the DB itself because we car going to use it inside our project !!
+--------------------------------------------------------------------
+*endpoint- "rds-project-1.cby6g6skewzn.ap-south-1.rds.amazonaws.com" 
+--------------------------------------------------------------------
+-mysql -h rds-project-1.cby6g6skewzn.ap-south-1.rds.amazonaws.com -u admin -p (now in next line use the password that we given while creating the DB)
+after hitting the password we enter inside the DB.
+# Use some of the query for creating the table in which our project data will going to save our data.
+--create database student;
+--use student; (this command select the table that we created and now we are going to use that table for the further project)
+--exit(now simply exit from the DB)
+
+#now get the project from the GitHub:
+---git clone https://github.com/IamPaimon/EasyCRUD.git 
+-go inside the EasyCRUD directory.
+-cd backend/src/main/resources
+-nano application.properties (here we have to edit the file)
+
+#Cut the entire script and paste the below code as it is and we have to do minor change
+
+--------------XXXXXXXXXXX---------------
+"server.port=8080
+
+spring.datasource.url=jdbc:mariadb://rds-project-1.cby6g6skewzn.ap-south-1.rds.amazonaws.com:3306/student?sslMode=trust
+spring.datasource.username=admin
+spring.datasource.password=XXXXXXXXXX
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true"
+-------------XXXXXXXXXXXXX------------
+
+NOTE: spring.datasource.url=jdbc:mariadb://database-1.cjk4eggu4mjc.ap-south-1.rds.amazonaws.com:3306/student_db?sslMode=trust (this is the before script that is used inside this we have add our endpoint, provide the Db table name and password)
+endpoint should be add after // till.3306/Db-table-name
+ 
+----------------------------------------------------------------------
+save the script !!
+
+Now we have go back to backend directory !! for the clean maven package!!
+-cd ..
+-cd ..
+-cd ..
+-mvn clean package
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX----END OF THE DB----XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+now backend part:
+-cd frontend 
+-apt install nodejs npm -y (this is the nodejs backend package library)
+-npm install
+-npm audit fix -f
+-apt install apache2 -y (apache server for the frontend part)
+-ls -la (this will show us a hidden files in list format)
+-nano .env(we have to modify the .env file through nano editor, we have to simply put the instance ip inside the .env file !!)
+-npm run build
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX----END OF THE BACKEND----XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+now frontend part:
+-cp -rf dist/* /var/www/html/
+-cd .. (get back from the frontend directory)
+-cd backend
+-cd target (inside the target directory, we have to run some command)
+-ls (this will show you the .jar file that we have to run now )
+-java -jar student-registration-backend-0.0.1-SNAPSHOT.jar
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-----END OF FRONTEND-------XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+hyrarchi: 
+-->DATABASE
+0.mysql-client
+1.openjdk
+2.maven
+----------
+-->BACKEND & FRONTEND
+0.nodejs npm
+1.npm install
+2.apache2
+3.npm run build
+----------
+--> Run the Backend File !!
+0.java -jar student....(file.jar)
