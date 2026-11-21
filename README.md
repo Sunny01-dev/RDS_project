@@ -32,3 +32,6 @@ Browser --80--> Apache2 (EC2) --8080--> Spring Boot API (EC2) --3306--> RDS Mari
 6. Run `java -jar student-registration-backend-0.0.1-SNAPSHOT.jar`.
 
 > **Security:** never commit your real DB password or endpoint. Use placeholders.
+
+## Architecture of project 
+<img src="aws-rds-workflow.jpg">
