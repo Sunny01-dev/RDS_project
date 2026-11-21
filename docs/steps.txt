@@ -1,0 +1,126 @@
+AWS-RDS PROJECT: STEP-BY-STEP GUIDE
+===================================
+Repo used: https://github.com/IamPaimon/EasyCRUD.git
+Stack: MariaDB (RDS) + Spring Boot backend (port 8080) + Node/Vite frontend (Apache, port 80)
+
+--------------------------------------------------------------
+PART 1: CREATE THE DATABASE (AWS RDS)
+--------------------------------------------------------------
+1.  AWS Console -> RDS -> Databases -> Create database.
+2.  Creation method: Full configuration.
+3.  Engine: MariaDB.
+4.  Template: Sandbox.
+5.  Settings: toggle ON "Show only versions that support Amazon RDS Optimized Writes".
+6.  Engine version: choose per project requirement (e.g. 11.8.6).
+7.  DB instance identifier: give a name (e.g. rds-project-1).
+8.  Credentials: Master username = admin.
+    Password: Self managed (free) or AWS Secrets Manager (paid).
+    SAVE THE PASSWORD - it is shown only once.
+9.  Authentication: Password authentication.
+10. Instance configuration: review and choose.
+11. Storage: select the required storage amount.
+12. Connectivity:
+      - Compute resource: "Don't connect to an EC2 compute resource"
+      - Network type: IPv4
+      - VPC: Default (or your own VPC if the DB uses a different one)
+      - Public access: NO
+      - VPC security group: Create new, give it a name
+      - Availability zone: select one
+13. Click Create database and wait a few minutes.
+
+--------------------------------------------------------------
+PART 2: CREATE THE EC2 INSTANCE
+--------------------------------------------------------------
+This instance runs the DB client, backend and frontend.
+Open ports: 22, 80, 8080, 3306, (443 for HTTPS)  -> see docs/ports.txt
+Make sure the RDS security group allows 3306 from the EC2 security group.
+
+After the instance is running, SSH in and run:
+
+    sudo -i
+    apt update
+    apt install mysql-client -y
+    apt install maven -y
+    apt install openjdk-21-jdk -y
+
+--------------------------------------------------------------
+PART 3: DATABASE SETUP
+--------------------------------------------------------------
+Copy the RDS ENDPOINT from RDS -> Databases -> your DB -> Connectivity.
+
+    mysql -h <RDS-ENDPOINT> -u admin -p
+    (enter the password you saved)
+
+Inside MariaDB:
+
+    create database student;
+    use student;
+    exit
+
+--------------------------------------------------------------
+PART 4: CLONE THE PROJECT AND CONFIGURE THE BACKEND
+--------------------------------------------------------------
+    git clone https://github.com/IamPaimon/EasyCRUD.git
+    cd EasyCRUD/backend/src/main/resources
+    nano application.properties
+
+Replace the whole file content with:
+
+    server.port=8080
+
+    spring.datasource.url=jdbc:mariadb://<RDS-ENDPOINT>:3306/student?sslMode=trust
+    spring.datasource.username=admin
+    spring.datasource.password=<YOUR-DB-PASSWORD>
+
+    spring.jpa.hibernate.ddl-auto=update
+    spring.jpa.show-sql=true
+
+URL format: jdbc:mariadb://<endpoint>:3306/<database-name>?sslMode=trust
+The database name here must match the one created in Part 3 (student).
+
+Save the file, then build the backend:
+
+    cd ../../../..          # back to EasyCRUD/backend
+    mvn clean package
+
+--------------------------------------------------------------
+PART 5: BUILD THE FRONTEND
+--------------------------------------------------------------
+    cd ../frontend
+    apt install nodejs npm -y
+    npm install
+    npm audit fix -f
+    apt install apache2 -y
+    ls -la                   # shows hidden files, including .env
+    nano .env                # put the EC2 instance IP in the backend URL
+    npm run build
+
+--------------------------------------------------------------
+PART 6: DEPLOY AND RUN
+--------------------------------------------------------------
+    cp -rf dist/* /var/www/html/
+    cd ../backend/target
+    ls                       # shows the .jar file
+    java -jar student-registration-backend-0.0.1-SNAPSHOT.jar
+
+Open in a browser:   http://<EC2-PUBLIC-IP>
+Backend API:         http://<EC2-PUBLIC-IP>:8080
+
+Tip: to keep the backend running after you close SSH:
+    nohup java -jar student-registration-backend-0.0.1-SNAPSHOT.jar > backend.log 2>&1 &
+
+--------------------------------------------------------------
+INSTALL ORDER SUMMARY
+--------------------------------------------------------------
+DATABASE side:      1. mysql-client   2. openjdk-21   3. maven
+FRONTEND build:     1. nodejs + npm   2. npm install  3. apache2   4. npm run build
+RUN BACKEND:        java -jar student-registration-backend-0.0.1-SNAPSHOT.jar
+
+--------------------------------------------------------------
+TROUBLESHOOTING
+--------------------------------------------------------------
+* Can't connect to RDS: check the RDS security group allows 3306 from the EC2
+  security group, and that EC2 and RDS are in the same VPC.
+* Site loads but no data: check the IP in frontend/.env and that port 8080 is open.
+* Backend fails at startup: re-check endpoint, database name and password in
+  application.properties.

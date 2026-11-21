@@ -1,0 +1,18 @@
+PORTS TO OPEN FOR THE AWS-RDS PROJECT
+=====================================
+
+Port  | Protocol | Used for                          | Where to open it
+------+----------+-----------------------------------+------------------------------------
+22    | SSH      | Login to the EC2 instance         | EC2 security group (ideally "My IP")
+80    | HTTP     | Frontend website (Apache2)        | EC2 security group (0.0.0.0/0)
+8080  | TCP      | Backend API (Spring Boot .jar)    | EC2 security group (0.0.0.0/0)
+3306  | TCP      | MariaDB / RDS database            | RDS security group
+443   | HTTPS    | Website with a TLS certificate    | EC2 security group (optional)
+
+NOTES
+-----
+* Original notes said "447" for TLS. The standard HTTPS port is 443.
+* Port 3306: RDS is created with Public access = NO, so the database is not
+  reachable from the internet. In the RDS security group, allow 3306 only
+  from the EC2 instance's security group (not 0.0.0.0/0). This is safer.
+* Port 22: restrict to your own IP rather than 0.0.0.0/0 when possible.

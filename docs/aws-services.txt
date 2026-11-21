@@ -1,0 +1,22 @@
+AWS SERVICES USED IN THIS PROJECT
+=================================
+
+1. Amazon RDS (MariaDB)            logo: logos/rds.svg
+   - Managed database. Engine: MariaDB (version e.g. 11.8.6), Sandbox template,
+     Public access = NO, Password authentication.
+   - Provides the ENDPOINT used in application.properties.
+
+2. Amazon EC2                      logo: logos/ec2.svg
+   - Ubuntu server that hosts everything else: MySQL client (DB manager),
+     Java 21 + Maven (backend), Node.js + npm (frontend build), Apache2 (web server).
+
+3. Amazon VPC + Security Groups    logo: logos/vpc.svg
+   - Default VPC, IPv4, in the same region as EC2 (ap-south-1 Mumbai).
+   - Security groups control the ports listed in docs/ports.txt.
+
+4. AWS Secrets Manager (OPTIONAL)  logo: logos/secrets-manager.svg
+   - Paid alternative to self-managing the DB password. Not required here;
+     with "Self managed" you must save the master password yourself because
+     it is shown only once.
+
+
